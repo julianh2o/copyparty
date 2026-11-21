@@ -1481,6 +1481,10 @@ class HttpCli(object):
             self.reply(self.j2s("cf").encode("utf-8", "replace"))
             return True
 
+        if "drive" in self.uparam and self.args.drive:
+            # static app shell; all data comes from ?ls etc. which check perms
+            return self.tx_drive()
+
         if not self.can_read and not self.can_write and not self.can_get:
             t = "@%s has no access to %r"
 
@@ -6575,6 +6579,11 @@ class HttpCli(object):
 
         html = self.j2s("rups", this=self, v=json_hesc(jtxt))
         self.reply(html.encode("utf-8"), status=200)
+        return True
+
+    def tx_drive(self) -> bool:
+        html = self.j2s("drive", this=self, uname=self.uname)
+        self.reply(html.encode("utf-8", "replace"), status=200)
         return True
 
     def tx_idp(self) -> bool:
