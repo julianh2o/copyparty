@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" id="ht_drv">
+
+<head>
+	<meta charset="utf-8">
+	<title>{{ s_doctitle }}</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="theme-color" content="#{{ tcolor }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/w/drive.css?_={{ ts }}">
+{{ html_head }}
+</head>
+
+<body>
+	<div id="app">
+		<header id="top">
+			<button id="b_menu" class="ib" title="menu" aria-label="menu"></button>
+			<button id="b_back" class="ib" title="back (Alt+Left)" aria-label="back"></button>
+			<button id="b_fwd" class="ib" title="forward (Alt+Right)" aria-label="forward"></button>
+			<nav id="crumbs" aria-label="breadcrumbs"></nav>
+			<label id="filterw"><span class="ico" data-i="search"></span><input id="filter" type="search" placeholder="filter this folder  ( / )" autocomplete="off" /></label>
+			<button id="b_cfg" class="ib" title="settings" aria-label="settings"></button>
+			<span id="acct"></span>
+		</header>
+		<aside id="rail">
+			<button id="b_new" class="pri"><span class="ico" data-i="plus"></span><span>New</span></button>
+			<div id="newmenu" class="menu" hidden>
+				<button data-a="mkdir"><span class="ico" data-i="folder"></span>New folder</button>
+				<button data-a="upf"><span class="ico" data-i="upload"></span>Upload files</button>
+				<button data-a="upd"><span class="ico" data-i="upload"></span>Upload folder</button>
+			</div>
+			<nav id="places">
+				<a href="#/" data-p="home"><span class="ico" data-i="home"></span>Home</a>
+				<a href="#!recent" data-p="recent"><span class="ico" data-i="clock"></span>Recent</a>
+				<a href="#!starred" data-p="starred"><span class="ico" data-i="star"></span>Starred</a>
+			</nav>
+			<div class="rhdr">Volumes</div>
+			<div id="tree" role="tree"></div>
+			<div id="railfoot">
+				<a id="classic" href="{{ r }}/">open in classic UI</a>
+			</div>
+		</aside>
+		<main id="main">
+			<div id="bar">
+				<div id="title"></div>
+				<div id="tools">
+					<select id="sort" title="sort by" aria-label="sort by">
+						<option value="name">Name</option>
+						<option value="ts">Modified</option>
+						<option value="sz">Size</option>
+						<option value="ext">Type</option>
+					</select>
+					<button id="b_dir" class="ib" title="toggle sort direction" aria-label="sort direction"></button>
+					<button id="b_view" class="ib" title="list / grid (G)" aria-label="toggle view"></button>
+					<button id="b_info" class="ib" title="details (I)" aria-label="toggle details"></button>
+				</div>
+			</div>
+			<div id="pane" tabindex="0"></div>
+		</main>
+		<aside id="details" hidden></aside>
+	</div>
+	<div id="tray" hidden></div>
+	<div id="dropz" hidden><div><span class="ico" data-i="upload"></span><b>Drop to upload</b><span id="dropto"></span></div></div>
+	<div id="toasts" aria-live="polite"></div>
+	<div id="sheet" hidden></div>
+	<input type="file" id="fpick" multiple hidden />
+	<input type="file" id="dpick" multiple webkitdirectory hidden />
+	<script nonce="{{ js_nonce }}">
+
+var SR = "{{ r }}",
+	JS_NONCE = "{{ js_nonce }}",
+	TS = "{{ ts }}",
+	DRV = {
+		acct: {{ uname | tojson }},
+		usernames: {{ "true" if this.args.usernames else "false" }},
+		have_pw: {{ "true" if this.args.ao_have_pw else "false" }},
+		idp_login: {{ (this.args.idp_login or "") | replace("{dst}", r + "/?drive") | tojson }},
+		idp_logout: {{ (this.args.idp_logout or "") | tojson }}
+	};
+
+// degrade honestly: anything too old for the spa goes to the classic ui
+if (!window.fetch || !window.Promise || !window.Symbol || !window.FormData || !Element.prototype.closest)
+	location.replace(SR + "/" + (location.hash.slice(1, 2) == "/" ? location.hash.slice(2) : ""));
+
+	</script>
+	<script nonce="{{ js_nonce }}" src="{{ r }}/.cpr/w/drive.js?_={{ ts }}"></script>
+	{%- if js %}
+	<script nonce="{{ js_nonce }}" src="{{ js }}_={{ ts }}"></script>
+	{%- endif %}
+</body>
+</html>
