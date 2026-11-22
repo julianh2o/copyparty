@@ -161,7 +161,7 @@ _ = (argparse, threading)
 
 USED4SEC = {"usedforsecurity": False} if sys.version_info > (3, 9) else {}
 
-ALL_COOKIES = "cplng cppwd cppws dots idxh js k304 no304".split()
+ALL_COOKIES = "cplng cppwd cppws cpp_legacy dots idxh js k304 no304".split()
 
 BADXFF = " due to dangerous misconfiguration (the http-header specified by --xff-hdr was received from an untrusted reverse-proxy)"
 BADXFF2 = ". Some copyparty features are now disabled as a safety measure.\n\n\n"
@@ -1481,11 +1481,33 @@ class HttpCli(object):
             self.reply(self.j2s("cf").encode("utf-8", "replace"))
             return True
 
-        if "drive" in self.uparam and self.args.drive:
-            # static app shell; all data comes from ?ls etc. which check perms
-            return self.tx_drive()
+        if not self.args.no_drive:
+            # old ?drive links, and ?legacy=0 ("try the new look"), drop the
+            # legacy cookie and land on the plain path, which is the drive-ui
+            if "drive" in self.uparam or self.uparam.get("legacy") == "0":
+                return self.tx_drive_home()
+
+            if "legacy" in self.uparam:
+                ck = gencookie(
+                    "cpp_legacy",
+                    "1",
+                    self.args.R,
+                    True,
+                    self.is_https,
+                    86400 * 299,
+                )
+                self.out_headerlist.append(("Set-Cookie", ck))
 
         if not self.can_read and not self.can_write and not self.can_get:
+            if (
+                self._want_drive()
+                and (not self.vpath or self.trailing_slash)
+                and "on403" not in self.vn.flags
+            ):
+                # static app shell; all data comes from ?ls etc. which check
+                # perms, so serving it here just lets it offer a login
+                return self.tx_drive()
+
             t = "@%s has no access to %r"
 
             if self.vn.realpath and "on403" in self.vn.flags:
@@ -6586,6 +6608,36 @@ class HttpCli(object):
         self.reply(html.encode("utf-8", "replace"), status=200)
         return True
 
+    def _want_drive(self) -> bool:
+        """
+        true if this request would get the html directory listing, and that
+        should be the drive-ui; everything else (?ls, ?b, ?opds, ?zip, ?h,
+        curl, the legacy cookie, ...) keeps the classic behavior
+        """
+        if self.args.no_drive or self.mode not in ("GET", "HEAD"):
+            return False
+
+        if self.cookies.get("cpp_legacy") == "1":
+            return False
+
+        for k in self.uparam:
+            # pw: login by url; _: cachebuster from the login redirect
+            if k not in ("pw", "_"):
+                return False
+
+        return not self.ua.startswith(("curl/", "fetch"))
+
+    def tx_drive_home(self) -> bool:
+        if "cpp_legacy" in self.cookies:
+            ck = gencookie("cpp_legacy", "x", self.args.R, True, self.is_https)
+            self.out_headerlist.append(("Set-Cookie", ck))
+
+        vp = self.vpath
+        if vp and self.trailing_slash:
+            vp += "/"
+
+        return self.redirect(vp, flavor="redirecting to", use302=True)
+
     def tx_idp(self) -> bool:
         if self.uname.lower() not in self.args.idp_adm_set:
             raise Pebkac(403, "'idp' not allowed for user " + self.uname)
@@ -7378,6 +7430,12 @@ class HttpCli(object):
                 raise Pebkac(401, "OPDS requires read permission")
             is_js = is_ls = False
 
+        # the drive-ui replaces the html listing; if the client wants
+        # index.html served for folders, that is checked further down
+        want_drive = is_dir and not add_og and not is_dk and self._want_drive()
+        if want_drive and self.cookies.get("idxh") != "y":
+            return self.tx_drive()
+
         vf = vn.flags
         ls_ret = {
             "dirs": [],
@@ -7408,6 +7466,7 @@ class HttpCli(object):
             "title": html_escape("%s %s" % (self.args.bname, self.vpath), crlf=True),
             "srv_info": srv_infot,
             "dtheme": self.args.theme,
+            "drive": not self.args.no_drive,
         }
 
         if self.args.js_browser:
@@ -7640,6 +7699,9 @@ class HttpCli(object):
                             self.vpath + "/", flavor="redirecting to", use302=True
                         )
                     return self.tx_file("oh_f", ap)  # is no-cache
+
+        if want_drive:
+            return self.tx_drive()
 
         if icur:
             assert idx  # type: ignore  # !rm

@@ -2173,7 +2173,8 @@ def add_ui(ap, retry: int):
     THEMES = 10
     ap2 = ap.add_argument_group("ui options")
     ap2.add_argument("--grid", action="store_true", help="show grid/thumbnails by default (volflag=grid)")
-    ap2.add_argument("--drive", action="store_true", help="enable the experimental Drive-UI (a Google-Drive-style front-end) at [\033[33m?drive\033[0m]; it only uses the existing API (?ls, up2k, ...)")
+    ap2.add_argument("--no-drive", action="store_true", help="disable the Drive-UI (a Google-Drive-style front-end which is the default directory view); serve the classic UI everywhere. While the Drive-UI is enabled, [\033[33m?legacy\033[0m] opens the classic UI (sticky, using a cookie) and [\033[33m?legacy=0\033[0m] goes back to the Drive-UI")
+    ap2.add_argument("--drive", action="store_true", help=argparse.SUPPRESS)  # deprecated no-op; the drive-ui is the default now
     ap2.add_argument("--gsel", action="store_true", help="select files in grid by ctrl-click (volflag=gsel)")
     ap2.add_argument("--localtime", action="store_true", help="default to local timezone instead of UTC")
     ap2.add_argument("--ui-filesz", metavar="FMT", type=u, default="1", help="default filesize format; one of these: 0, 1, 2, 2c, 3, 3c, 4, 4c, 5, 5c, 6, 6c, 7, 7c, fuzzy (see UI)")

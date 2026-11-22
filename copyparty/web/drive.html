@@ -31,14 +31,14 @@
 				<button data-a="upd"><span class="ico" data-i="upload"></span>Upload folder</button>
 			</div>
 			<nav id="places">
-				<a href="#/" data-p="home"><span class="ico" data-i="home"></span>Home</a>
-				<a href="#!recent" data-p="recent"><span class="ico" data-i="clock"></span>Recent</a>
-				<a href="#!starred" data-p="starred"><span class="ico" data-i="star"></span>Starred</a>
+				<a href="{{ r }}/" data-nav="/" data-drop="/" data-p="home"><span class="ico" data-i="home"></span>Home</a>
+				<a href="{{ r }}/#!recent" data-nav="!recent" data-p="recent"><span class="ico" data-i="clock"></span>Recent</a>
+				<a href="{{ r }}/#!starred" data-nav="!starred" data-p="starred"><span class="ico" data-i="star"></span>Starred</a>
 			</nav>
 			<div class="rhdr">Volumes</div>
 			<div id="tree" role="tree"></div>
 			<div id="railfoot">
-				<a id="classic" href="{{ r }}/">open in classic UI</a>
+				<a id="classic" href="{{ r }}/?legacy">open in classic UI</a>
 			</div>
 		</aside>
 		<main id="main">
@@ -75,13 +75,15 @@ var SR = "{{ r }}",
 		acct: {{ uname | tojson }},
 		usernames: {{ "true" if this.args.usernames else "false" }},
 		have_pw: {{ "true" if this.args.ao_have_pw else "false" }},
-		idp_login: {{ (this.args.idp_login or "") | replace("{dst}", r + "/?drive") | tojson }},
-		idp_logout: {{ (this.args.idp_logout or "") | tojson }}
+		idp_login: {{ (this.args.idp_login or "") | tojson }},
+		idp_logout: {{ (this.args.idp_logout or "") | tojson }},
+		have_zip: {{ "false" if this.args.no_zip else "true" }}
 	};
 
 // degrade honestly: anything too old for the spa goes to the classic ui
-if (!window.fetch || !window.Promise || !window.Symbol || !window.FormData || !Element.prototype.closest)
-	location.replace(SR + "/" + (location.hash.slice(1, 2) == "/" ? location.hash.slice(2) : ""));
+// (old #/x/ links from when the drive-ui lived at ?drive are mapped too)
+if (!window.fetch || !window.Promise || !window.Symbol || !window.FormData || !Element.prototype.closest || !window.history || !history.pushState)
+	location.replace((location.hash.slice(1, 2) == "/" ? SR + location.hash.slice(1).replace(/[^/]*$/, "") : location.pathname) + "?legacy");
 
 	</script>
 	<script nonce="{{ js_nonce }}" src="{{ r }}/.cpr/w/drive.js?_={{ ts }}"></script>
